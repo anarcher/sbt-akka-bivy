@@ -59,8 +59,21 @@ trait AkkaKernelDeployment extends DefaultProject {
 
   def akkaBootScript = """#!/bin/sh
 SCALA_VERSION=%s
-SCRIPT=$(readlink -f $0)
-export AKKA_HOME=`dirname $SCRIPT`
+PRG="$0"
+
+while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+        PRG="$link"
+    else
+        PRG=`dirname "$PRG"`/"$link"
+    fi
+done
+
+PRGDIR=`dirname "$PRG"`
+export AKKA_HOME=`cd "$PRGDIR/" ; pwd`
+
 java %s -jar $AKKA_HOME/%s&
 echo $!
 """.format(buildScalaVersion, jvmArgs, defaultJarPath(".jar").name)
